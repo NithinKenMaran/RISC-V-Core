@@ -5,7 +5,7 @@ from cocotb.clock import Clock
 from cocotb.triggers import Timer, ClockCycles
 
 @cocotb.test()
-async def test_registers(reg):
+async def test_reg(reg):
     clock = Clock(reg.clk, 4, units="ns")
     cocotb.start_soon(clock.start())
 

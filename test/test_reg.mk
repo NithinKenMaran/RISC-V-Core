@@ -12,6 +12,6 @@ COMPILE_ARGS += -DSIM
 TOPLEVEL = register_file
 
 # name of python file
-MODULE = test_registers
+MODULE = test_reg
 
 include $(shell cocotb-config --makefiles)/Makefile.sim

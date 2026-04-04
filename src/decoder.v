@@ -3,11 +3,11 @@
 module decoder(
     input [31:0] instr,
 
-    output reg [3:0] alu_op,
-
     output reg [4:0] rs2,
     output reg [4:0] rs1,
     output reg [4:0] rd,
+
+    output reg [3:0] alu_op,
     output [6:0] opcode,
 
     output is_rtype,

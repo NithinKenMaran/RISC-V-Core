@@ -1,5 +1,5 @@
-# Test Register File
+# Testing Setup
 
-```bash
-make -f test_reg.mk
+``` bash
+make -f *.mk
 ```

@@ -1,5 +1,6 @@
 # Testing Setup
 
 ``` bash
-make -f *.mk
+make -f test_smth.mk clean
+make -f test_smth.mk
 ```

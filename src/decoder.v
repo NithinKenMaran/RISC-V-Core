@@ -11,8 +11,11 @@ module decoder(
     output [6:0] opcode,
 
     output is_rtype,
+    output is_add,
     output [6:0] r_funct7,
     output [2:0] r_funct3,
+
+    output reg_write,
 
     output is_itype
 );
@@ -23,6 +26,10 @@ module decoder(
 
     // register signals
     always @(*) begin
+        rs1 = 5'b0;
+        rs2 = 5'b0;
+        rd = 5'b0;
+
         if (is_rtype) begin
             rs1 = instr[19:15];
             rs2 = instr[24:20];
@@ -32,7 +39,8 @@ module decoder(
 
     // instruction signals
     assign is_rtype = (opcode == 7'b0110011);
-    wire is_add = (r_funct3==3'b000 & r_funct7==7'b000_0000);
+    assign is_itype = (opcode == 7'b0010011);
+    assign is_add = is_rtype && (r_funct3 == 3'b000) && (r_funct7 == 7'b000_0000);
 
     // alu op
     always @(*) begin
@@ -44,6 +52,7 @@ module decoder(
         end
     end
 
+    assign reg_write = is_add;
 
 
 endmodule // decoder

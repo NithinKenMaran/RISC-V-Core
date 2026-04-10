@@ -3,13 +3,13 @@
 First, clean existing build products
 
 ``` bash
-make -f test_thing.mk clean
+make -f test_item.mk clean
 ```
 
 Then, run the test script
 
 ```bash
-make -f test_smth.mk
+make -f test_item.mk
 ```
 
 ## Example

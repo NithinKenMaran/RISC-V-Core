@@ -26,7 +26,10 @@ async def test_add(core):
     core.register_file.registers[2].value = 20
     await Timer(1, units="ns")
 
+    # INSTRUCTION ENCODE HAPPENS HERE
     core.instr.value = encode_add(rd=3, rs1=1, rs2=2)
+    # ###############################
+
     core.instr_valid.value = 1
     await RisingEdge(core.clk)
     await Timer(1, units="ns")

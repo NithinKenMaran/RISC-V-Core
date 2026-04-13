@@ -1,20 +1,5 @@
-# Testing Setup
-
-First, clean existing build products
-
-``` bash
-make -f test_item.mk clean
-```
-
-Then, run the test script
-
+# Test R Type and I type instructions
 ```bash
-make -f test_item.mk
-```
-
-## Example
-
-```bash
-make -f test_core.mk clean
-make -f test_core.mk
+make -f test_instr.mk clean
+make -f test_instr.mk
 ```

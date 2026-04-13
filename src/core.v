@@ -13,7 +13,6 @@ module core(
     // decoder
     wire [4:0] rs1, rs2, rd;
     wire [3:0] alu_op;
-    wire is_add;
     wire reg_write;
 
     decoder decoder(
@@ -23,11 +22,6 @@ module core(
         .rd(rd),
         .alu_op(alu_op), 
         .opcode(),
-        .is_rtype(), 
-        .is_add(is_add),
-        .r_funct7(), 
-        .r_funct3(),
-        .is_itype(),
         .reg_write(reg_write)
 
     );
@@ -65,10 +59,14 @@ module core(
 
     // alu
     wire [31:0] alu_result;
+    wire [31:0] src_a, src_b;
+
+    assign src_a = rdata_1;
+
     alu alu(
         .alu_op(alu_op),
-        .a(rdata_1),
-        .b(rdata_2),
+        .a(src_a),
+        .b(src_b),
         .result(alu_result)
     );
 

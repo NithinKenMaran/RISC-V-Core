@@ -2,7 +2,7 @@
 
 module control_unit(
     input [6:0] op,
-    input [2:0] funct3,         // CHANGED: funct3 is 3 bits
+    input [2:0] funct3,         
     input funct7_5,
     input zero,
     

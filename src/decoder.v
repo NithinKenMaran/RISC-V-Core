@@ -4,7 +4,7 @@ module decoder(
     input [31:0] instr,
 
     output [6:0] op,
-    output [3:0] funct3,
+    output [2:0] funct3,
     output funct7_5,
 
     output [4:0] rs1,

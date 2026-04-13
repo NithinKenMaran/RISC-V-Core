@@ -14,7 +14,7 @@ module core(
 
     // decoder
     wire [6:0] op;
-    wire [3:0] funct3;
+    wire [2:0] funct3;
     wire funct7_5;
     wire [4:0] rs1, rs2, rd;
     wire [24:0] imm;

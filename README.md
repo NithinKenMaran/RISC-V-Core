@@ -1,6 +1,6 @@
 # RISC-V Core
 
-The core follows this block diagram.
+`src/core.v` follows this block diagram.
 
 ![CPU Block Diagram](images/single-cycle-processor.png)
 

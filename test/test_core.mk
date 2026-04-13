@@ -10,6 +10,8 @@ VERILOG_SOURCES += $(SRC)/core.v
 VERILOG_SOURCES += $(SRC)/decoder.v
 VERILOG_SOURCES += $(SRC)/register_file.v
 VERILOG_SOURCES += $(SRC)/alu.v
+VERILOG_SOURCES += $(SRC)/extender.v
+VERILOG_SOURCES += $(SRC)/control_unit.v
 
 # Needed for params.vh
 COMPILE_ARGS += -I$(INC)

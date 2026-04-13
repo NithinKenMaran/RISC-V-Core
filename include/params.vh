@@ -9,8 +9,3 @@
 `define ALU_SRA  5'd7
 `define ALU_OR   5'd8
 `define ALU_AND  5'd9
-
-`define FETCH 3'd0
-`define EXECUTE 3'd1
-`define WRITEBACK 3'd2
-`define FINISH 3'b111

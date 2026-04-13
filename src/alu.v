@@ -5,7 +5,8 @@ module alu(
 
     input [31:0] a,
     input [31:0] b,
-    output reg [31:0] result
+    output reg [31:0] result,
+    output zero
 );
     always @(*) begin
         case (alu_op)
@@ -22,5 +23,7 @@ module alu(
             default:   result = 32'b0;
         endcase
     end
+
+    assign zero = (result == 32'b0);
 
 endmodule; // alu

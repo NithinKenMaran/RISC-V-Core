@@ -1,3 +1,4 @@
+`include "params.vh"
 module rv32_alu # (parameter WORD_LEN = 32)(
     input [WORD_LEN-1:0] SrcA,
     input [WORD_LEN-1:0] SrcB,
@@ -13,11 +14,11 @@ module rv32_alu # (parameter WORD_LEN = 32)(
     always @(*) begin
 
         case(ALUControl)
-            3'b000: ALUResult = SrcA + SrcB;
-            3'b001: ALUResult = SrcA - SrcB;
-            3'b010: ALUResult = SrcA & SrcB;
-            3'b011: ALUResult = SrcA | SrcB;
-            3'b101: ALUResult = SrcA < SrcB;
+            `ALU_ADD: ALUResult = SrcA + SrcB;
+            `ALU_SUB: ALUResult = SrcA - SrcB;
+            `ALU_AND: ALUResult = SrcA & SrcB;
+            `ALU_OR: ALUResult = SrcA | SrcB;
+            `ALU_SLT: ALUResult = SrcA < SrcB;
         endcase
     end
     

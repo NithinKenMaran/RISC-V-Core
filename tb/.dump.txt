@@ -1,0 +1,61 @@
+// `timescale 1ns/1ns
+// `include "tb/instructions.vh"
+// module tb;
+
+//     // imem
+//     reg [31:0] imem [0:255];
+
+//     // 1. Signals
+//     reg clk;
+//     reg rst;
+//     wire [9:0] pc;
+//     wire [31:0] instr;
+
+
+//     // 2. Instantiate DUT       
+//     rv32_core dut (
+//         .clk(clk),
+//         .rst(rst),
+//         .instr(instr),
+//         .pc(pc)
+//     );
+
+//     // 3. Clock generation
+//     always #5 clk = ~clk;
+
+
+//     // 4. Stimulus
+//     // obtaining instruction from pc
+//     assign instr = imem[pc >> 2];
+//     initial begin
+//         clk = 1;
+//         rst = 1;
+//         // loading instruction memory
+//         imem[0] = 32'b0000000_00011_00010_000_00001_0110011;
+//         imem[1] = 32'b0000000_00011_00010_000_00001_0110011;
+//         imem[2] = 32'b0000000_00011_00010_000_00001_0110011;
+//         imem[3] = 32'b0000000_00011_00010_000_00001_0110011;
+//         imem[4] = 32'b0000000_00011_00010_000_00001_0110011;
+
+//         // Preload registers
+//         dut.u_regfile.regfile[2] = 32'd10;
+//         dut.u_regfile.regfile[3] = 32'd20;
+
+//         #5 rst = 0;
+//         // Check result
+//         $monitor("t=%0t pc=%0d instr=%h rd=%0d R1 = %d",
+//          $time, pc, instr, dut.rd, dut.u_regfile.regfile[1]);
+        
+//         #6;
+//         if (dut.u_regfile.regfile[1] == 32'd30)
+//             $display("PASS");
+//         else
+//             $display("FAIL");
+        
+//         // Run few cycles
+//         repeat (4) @(posedge clk);
+
+//         #2 $finish;
+//     end
+
+// endmodule

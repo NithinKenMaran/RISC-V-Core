@@ -23,6 +23,8 @@ module rv32_regfile #(
     // read is combinational
     assign RD1 = (A1!=0)? regfile[A1] : 0;
     assign RD2 = (A2!=0)? regfile[A2] : 0;
+    // assign RD1 = regfile[A1];
+    // assign RD2 = regfile[A2];
 
     // write is sequential
     always @(posedge clk) begin

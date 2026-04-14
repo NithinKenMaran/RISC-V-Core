@@ -1,11 +1,16 @@
+// `include "params.vh"
 module rv32_core #(
     parameter WORD_LEN = 32,
-    parameter ADDR_LEN = 5
+    parameter ADDR_LEN = 5,
+    parameter N = 10
 )(
-    input clk, rst
+    input clk, rst,
+    input [31:0] instr,
+
+    output [N-1:0] pc
 );
-    wire [N-1:0] pc;
-    wire [31:0] instr;
+    // wire [N-1:0] pc;
+    // wire [31:0] instr;
     wire zero; // zero flag
     // main decoder
     wire PCSrc;
@@ -16,11 +21,14 @@ module rv32_core #(
     wire RegWrite;
     // alu decoder
     wire [2:0] ALUControl;
+
+    wire [11:0] imm; // immediate after bit slicing
+    wire [31:0] ImmExt;
     // RF addr
     wire [ADDR_LEN-1:0] rs2;
     wire [ADDR_LEN-1:0] rs1;
     wire [ADDR_LEN-1:0] rd;
-    input [WORD_LEN-1:0] WD; // write data
+    wire [WORD_LEN-1:0] WD; // write data
     // read data
     wire [WORD_LEN-1:0] RD1;
     wire [WORD_LEN-1:0] RD2;
@@ -32,8 +40,9 @@ module rv32_core #(
     // fetch, has the program counter
     rv32_fetch u_fetch (
         .clk(clk), .rst(rst),
-        .instr(instr), .pc(pc)
+        .pc(pc)
     );
+
 
     // decode
     rv32_decoder u_decode (
@@ -45,9 +54,15 @@ module rv32_core #(
         .ImmSrc(ImmSrc),
         .RegWrite(RegWrite),
         .ALUControl(ALUControl),
+        .imm(imm),
         .rs2(rs2),
         .rs1(rs1),
         .rd(rd)
+    );
+
+    rv32_extend u_extend (
+        .imm(imm), .ImmSrc(ImmSrc),
+        .ImmExt(ImmExt)
     );
 
     rv32_regfile u_regfile (
@@ -55,14 +70,14 @@ module rv32_core #(
         .WE(RegWrite),
         .A1(rs1),
         .A2(rs2),
-        .A3(rs3),
+        .A3(rd),
         .WD(WD),
         .RD1(RD1),
         .RD2(RD2)
     );
 
     assign SrcA = RD1;
-    assign SrcB = RD2;
+    assign SrcB = ALUSrc? ImmExt : RD2;
 
     rv32_alu u_alu (
         .SrcA(SrcA), .SrcB(SrcB),

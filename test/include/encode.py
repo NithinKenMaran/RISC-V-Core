@@ -251,3 +251,18 @@ def encode_auipc(rd: int, imm20: int) -> int:
     imm20 &= 0xFFFFF
     opcode = 0b0010111
     return (imm20 << 12) | (rd << 7) | opcode
+
+
+# MEMORY OPERATION ENCODERS
+def encode_lw(rd: int, rs1: int, imm: int) -> int:
+    imm12 = imm & 0xFFF
+    opcode = 0b0000011
+    funct3 = 0b010
+
+    return (
+        (imm12 << 20)
+        | (rs1 << 15)
+        | (funct3 << 12)
+        | (rd << 7)
+        | opcode
+    )

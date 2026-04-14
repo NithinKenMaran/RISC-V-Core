@@ -7,12 +7,14 @@ module core(
 
     input wire [31:0] instr,
 
-    // instr_valid is unused for now
-    // right now, test_core.py appropriately asserts instruction
-    // then waits for 1 ns and reads outputs.
     input instr_valid,
 
-    output reg [31:0] pc
+    output reg [31:0] pc,
+
+    // memory things
+    output [31:0] mem_addr,
+    output [31:0] mem_wdata,
+    input [31:0] mem_rdata
     );
 
 
@@ -116,7 +118,7 @@ module core(
     always @(*) begin
         case (result_src)
             3'b000: reg_w_data = alu_result; // ALU result
-            3'b001: reg_w_data = 32'b0; // for memory load (not implemented yet)
+            3'b001: reg_w_data = mem_rdata; // for memory load (not implemented yet)
             3'b010: reg_w_data = pc + 4; // for jal & jalr
             3'b011: reg_w_data = imm_ext; // for lui
             3'b100: reg_w_data = pc + imm_ext;
@@ -151,5 +153,10 @@ module core(
         .lt(lt),
         .ltu(ltu)
     );
+
+
+    // memory interface
+    assign mem_addr = alu_result;
+    assign mem_wdata = rdata_2;
 
 endmodule; // core

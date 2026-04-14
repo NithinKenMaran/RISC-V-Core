@@ -19,6 +19,11 @@ module control_unit(
 
     // instruction type signals
     wire is_rtype, is_itype, branch, is_jal, is_jalr, is_lui, is_auipc;
+    wire is_load, is_lw;
+
+    // data memory operations 
+    assign is_load = (op == 7'b0000011);
+    assign is_lw   = is_load && (funct3 == 3'b010);
 
     assign is_rtype = (op == 7'b0110011);
     assign is_itype = (op == 7'b0010011);
@@ -63,7 +68,8 @@ module control_unit(
     assign result_src = (is_jal || is_jalr) ? 3'b010 : 
                         is_lui              ? 3'b011 : 
                         is_auipc            ? 3'b100 :
-                        2'b00;
+                        is_lw               ? 3'b001 :
+                        3'b00;
 
 
     assign memwrite  = 1'b0;
@@ -75,10 +81,10 @@ module control_unit(
                 //(NOTE: jalr is I type)
 
     // register write enable
-    assign reg_write = is_rtype || is_itype || is_jal || is_jalr || is_lui || is_auipc;
+    assign reg_write = is_rtype || is_itype || is_jal || is_jalr || is_lui || is_auipc || is_lw;
 
     // ALU source: 1 if immediate, 0 if register type
-    assign alu_src = is_itype || is_jalr;
+    assign alu_src = is_itype || is_jalr || is_load;
 
     always @(*) begin
         alu_op = 5'b00000;  // default
@@ -117,7 +123,11 @@ module control_unit(
 
         else if (is_jalr) begin
             alu_op = `ALU_ADD; // for jalr, calculate target address
+
+        end else if (is_lw) begin
+            alu_op = `ALU_ADD;
         end
     end
+
 
 endmodule // control_unit

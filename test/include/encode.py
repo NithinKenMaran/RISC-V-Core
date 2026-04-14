@@ -230,3 +230,24 @@ def encode_jalr(rd: int, rs1: int, imm: int) -> int:
         | (rd << 7)
         | opcode
     )
+
+# U type encoder 
+def encode_lui(rd: int, imm20: int) -> int:
+    """
+    Encode: lui rd, imm20
+
+    imm20 is the upper 20-bit immediate value, not the already-shifted 32-bit value.
+    """
+    imm20 &= 0xFFFFF
+    opcode = 0b0110111
+    return (imm20 << 12) | (rd << 7) | opcode
+
+def encode_auipc(rd: int, imm20: int) -> int:
+    """
+    Encode: auipc rd, imm20
+
+    imm20 is the upper 20-bit immediate value, not the shifted 32-bit value.
+    """
+    imm20 &= 0xFFFFF
+    opcode = 0b0010111
+    return (imm20 << 12) | (rd << 7) | opcode

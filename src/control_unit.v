@@ -9,7 +9,7 @@ module control_unit(
     input ltu,
     
     output reg [1:0] pc_src,
-    output [1:0] result_src,
+    output [2:0] result_src,
     output memwrite,
     output reg [3:0] alu_op,    
     output alu_src,
@@ -18,13 +18,15 @@ module control_unit(
 );
 
     // instruction type signals
-    wire is_rtype, is_itype, branch, is_jal, is_jalr;
+    wire is_rtype, is_itype, branch, is_jal, is_jalr, is_lui, is_auipc;
 
     assign is_rtype = (op == 7'b0110011);
     assign is_itype = (op == 7'b0010011);
     assign branch = (op == 7'b1100011);
     assign is_jal = (op == 7'b1101111);
     assign is_jalr = (op == 7'b1100111) && (funct3 == 3'b000);
+    assign is_lui = (op == 7'b0110111);
+    assign is_auipc = (op == 7'b0010111);
 
     // branch specific 
     wire is_beq = branch && (funct3 == 3'b000); 
@@ -57,18 +59,23 @@ module control_unit(
         end
     end
 
-    // result source: 00 = ALU, 01 = memory, 10 = PC + 4
-    assign result_src = (is_jal || is_jalr) ? 2'b10 : 2'b00;
+    // result source: 00 = ALU, 01 = memory, 10 = PC + 4, 11 = lui
+    assign result_src = (is_jal || is_jalr) ? 3'b010 : 
+                        is_lui              ? 3'b011 : 
+                        is_auipc            ? 3'b100 :
+                        2'b00;
+
 
     assign memwrite  = 1'b0;
     assign imm_src =
-        is_jal  ? 2'b11 : // J type
-        branch  ? 2'b10 : // B type
-                2'b00; // I type 
+        is_jal  ? 3'b100 : // J type
+        (is_lui || is_auipc)  ? 3'b011 : // U type
+        branch  ? 3'b010 : // B type
+                3'b000; // I type 
                 //(NOTE: jalr is I type)
 
     // register write enable
-    assign reg_write = is_rtype || is_itype || is_jal || is_jalr;
+    assign reg_write = is_rtype || is_itype || is_jal || is_jalr || is_lui || is_auipc;
 
     // ALU source: 1 if immediate, 0 if register type
     assign alu_src = is_itype || is_jalr;

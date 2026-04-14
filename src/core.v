@@ -61,11 +61,11 @@ module core(
 
     // control unit
     wire [1:0] pc_src;
-    wire [1:0] result_src;
+    wire [2:0] result_src;
     wire memwrite;
     wire [3:0] alu_op;
     wire alu_src;
-    wire [1:0] imm_src;
+    wire [2:0] imm_src;
     wire reg_write;
 
     control_unit control_unit (
@@ -115,9 +115,11 @@ module core(
 
     always @(*) begin
         case (result_src)
-            2'b00: reg_w_data = alu_result; // ALU result
-            2'b10: reg_w_data = pc + 4; // for jal & jalr
-            2'b01: reg_w_data = 32'b0; // for load (not implemented yet)
+            3'b000: reg_w_data = alu_result; // ALU result
+            3'b001: reg_w_data = 32'b0; // for memory load (not implemented yet)
+            3'b010: reg_w_data = pc + 4; // for jal & jalr
+            3'b011: reg_w_data = imm_ext; // for lui
+            3'b100: reg_w_data = pc + imm_ext;
             default: reg_w_data = 32'b0;
         endcase
     end

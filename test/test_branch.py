@@ -10,9 +10,7 @@ sys.path.append(str(Path(__file__).resolve().parent / "include"))
 from include.encode import *
 from include.test_helpers import *
 
-def imem_read(imem, byte_addr):
-    word_addr = byte_addr >> 2
-    return imem[word_addr]
+
 
 @cocotb.test()
 async def test_beq(core):

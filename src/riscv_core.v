@@ -1,4 +1,4 @@
-// `include "params.vh"
+`include "params.vh"
 module rv32_core #(
     parameter WORD_LEN = 32,
     parameter ADDR_LEN = 5,
@@ -7,11 +7,12 @@ module rv32_core #(
     input clk, rst,
     input [31:0] instr,
 
-    output [N-1:0] pc
+    output reg [N-1:0] pc
 );
     // wire [N-1:0] pc;
     // wire [31:0] instr;
     wire zero; // zero flag
+    // Control Signals
     // main decoder
     wire PCSrc;
     wire ResultSrc;
@@ -21,7 +22,7 @@ module rv32_core #(
     wire RegWrite;
     // alu decoder
     wire [2:0] ALUControl;
-
+    // imm data
     wire [11:0] imm; // immediate after bit slicing
     wire [31:0] ImmExt;
     // RF addr
@@ -37,11 +38,23 @@ module rv32_core #(
     wire [WORD_LEN-1:0] SrcB;
     wire [WORD_LEN-1:0] ALUResult;
 
-    // fetch, has the program counter
-    rv32_fetch u_fetch (
-        .clk(clk), .rst(rst),
-        .pc(pc)
-    );
+    // pc wires for branch instructions,
+    wire [9:0] PCNext;
+    wire [9:0] PCplus4;
+    wire [9:0] PCTarget;
+    
+
+    // PROGRAM COUNTER
+    always @(posedge clk or posedge rst) begin
+        if (rst)
+            pc <= 0;
+        else
+            pc <= PCNext;
+    end
+
+    assign PCplus4 = pc + 10'd4;
+    assign PCTarget = pc + ImmExt[9:0];
+    assign PCNext = PCSrc? PCTarget : PCplus4; // updating PCNext
 
 
     // decode

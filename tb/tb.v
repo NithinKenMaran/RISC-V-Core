@@ -54,9 +54,11 @@ module tb;
         // Load program
         imem[1] = `ADD_R3_R2_R1;
         imem[2] = `ADDI_3_R1_R5;
+        imem[3] = `BEQ_128_R6_R5;
         // Preload registers
         dut.u_regfile.regfile[2] = 32'd10;
         dut.u_regfile.regfile[3] = 32'd20;
+        dut.u_regfile.regfile[6] = 32'd33;
 
         // Reset phase
         repeat (1) @(posedge clk);
@@ -64,21 +66,36 @@ module tb;
         rst = 0;
 
         // Run program
-        repeat (3) @(posedge clk);
+        repeat (2) @(posedge clk);
         // 1 for NOP, 
-        // 2 for ADD, 3 for ADDI
-        #1 // wait for write
-        // Check result
+        // 2 for ADD,
+        #2 // wait for write
+        if (dut.u_regfile.regfile[1] == 32'd30) begin
+            $display("PASS ADD R-TYPE");
+        end
+        else begin
+            $display("FAIL");
+        end
+
+        // for ADDI,
+        repeat (1) @(posedge clk)
+        #2 // wait for write
         if (dut.u_regfile.regfile[5] == 32'd33) begin
-            $display("PASS");
-            // $display("t=%0t pc=%0d instr=%h r2=%0d r3=%0d r1=%0d",
-            // $time, pc, instr, dut.u_regfile.regfile[2],
-            // dut.u_regfile.regfile[3], dut.u_regfile.regfile[1]);
+            $display("PASS ADDI I-TYPE");
+        end
+        else begin
+            $display("FAIL");
+        end
+
+        // 4 for BEQ
+        repeat (1) @(posedge clk)
+        #2
+        if (pc == 10'd524) begin
+            $display("PASS BEQ B-TYPE");
         end
         else begin
             $display("FAIL: rd (R1) = %0d", dut.u_regfile.regfile[1]);
         end
-        repeat (1) @(posedge clk)
 
         #5 $finish;
     end
@@ -92,6 +109,7 @@ module tb;
             $time, pc, instr, dut.ImmExt,
             dut.u_regfile.regfile[1], dut.u_regfile.regfile[2],
             dut.u_regfile.regfile[3], dut.u_regfile.regfile[5]);
+        $display("PCSrc=%0b", dut.PCSrc);
     end
 
 endmodule

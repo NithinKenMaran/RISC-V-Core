@@ -1,18 +1,18 @@
 `include "params.vh"
-module rv32_fetch(
-    input clk, rst,
-    output reg [9:0] pc // need to change bit length
-);
+// module rv32_fetch(
+//     input clk, rst,
+//     output reg [9:0] pc // need to change bit length
+// );
 
-    // updating the instr_addr, PC is sequential. Current PC is latched.
-    always @(posedge clk or posedge rst) begin
-        if (rst)
-            pc <= 0;
-        else
-            pc <= pc + 4;
-    end
+//     // updating the instr_addr, PC is sequential. Current PC is latched.
+//     always @(posedge clk or posedge rst) begin
+//         if (rst)
+//             pc <= 0;
+//         else
+//             pc <= pc + 4;
+//     end
 
-endmodule
+// endmodule
 
 
 // implements fetch and decode

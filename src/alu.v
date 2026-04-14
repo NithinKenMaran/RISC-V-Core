@@ -12,7 +12,6 @@ module rv32_alu # (parameter WORD_LEN = 32)(
 );
 
     always @(*) begin
-
         case(ALUControl)
             `ALU_ADD: ALUResult = SrcA + SrcB;
             `ALU_SUB: ALUResult = SrcA - SrcB;
@@ -21,6 +20,8 @@ module rv32_alu # (parameter WORD_LEN = 32)(
             `ALU_SLT: ALUResult = SrcA < SrcB;
         endcase
     end
+
+    assign zero = (ALUResult == 32'b0);
     
 
 endmodule

@@ -10,8 +10,6 @@ sys.path.append(str(Path(__file__).resolve().parent / "include"))
 from include.encode import *
 from include.test_helpers import *
 
-
-
 @cocotb.test()
 async def test_beq(core):
     await run_branch_test(

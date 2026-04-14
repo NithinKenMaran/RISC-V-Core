@@ -95,3 +95,5 @@ async def test_pc(core):
     got = int(core.register_file.registers[5].value)
     assert got == 88, f"x5 wrong: got {got}, expected 88, \n \
         pc={pc}, instr=0x{instr:08x}"
+
+    print(f"Final PC: {pc}, x5 value: {got}")

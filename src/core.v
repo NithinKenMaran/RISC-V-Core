@@ -67,6 +67,8 @@ module core(
         .funct3(funct3),
         .funct7_5(funct7_5),
         .zero(zero),
+        .lt(lt), 
+        .ltu(ltu),
 
         .pc_src(pc_src),
         .result_src(result_src),
@@ -118,7 +120,9 @@ module core(
     // alu
     wire [31:0] alu_result;
     wire [31:0] src_a, src_b;
-    wire zero;
+    wire zero, lt, ltu;
+    // lt: less than?
+    // ltu: less than (unsigned)?
 
     assign src_a = rdata_1;
     assign src_b = alu_src ? imm_ext : rdata_2;
@@ -128,7 +132,9 @@ module core(
         .a(src_a),
         .b(src_b),
         .result(alu_result),
-        .zero(zero)
+        .zero(zero),
+        .lt(lt),
+        .ltu(ltu)
     );
 
 endmodule; // core

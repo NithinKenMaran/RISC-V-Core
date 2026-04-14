@@ -114,9 +114,10 @@ def encode_srai(rd: int, rs1: int, shamt: int) -> int:
 
 
 # B-TYPE ENCODERS
-def encode_beq(rs1, rs2, imm):
+
+def _encode_btype(rs1, rs2, imm, funct3):
     """
-    Encode: beq rs1, rs2, imm
+    Encode a generic B-type instruction.
 
     imm:
       - branch offset in bytes
@@ -124,10 +125,9 @@ def encode_beq(rs1, rs2, imm):
       - typically use multiples of 4 in your current setup
     """
     opcode = 0b1100011
-    funct3 = 0b000
 
     if imm % 2 != 0:
-        raise ValueError("BEQ immediate must be 2-byte aligned")
+        raise ValueError("Branch immediate must be 2-byte aligned")
 
     # 13-bit signed immediate for B-type
     imm &= 0x1FFF
@@ -148,3 +148,27 @@ def encode_beq(rs1, rs2, imm):
     instr |= opcode
 
     return instr
+
+
+def encode_beq(rs1, rs2, imm):
+    return _encode_btype(rs1, rs2, imm, 0b000)
+
+
+def encode_bne(rs1, rs2, imm):
+    return _encode_btype(rs1, rs2, imm, 0b001)
+
+
+def encode_blt(rs1, rs2, imm):
+    return _encode_btype(rs1, rs2, imm, 0b100)
+
+
+def encode_bge(rs1, rs2, imm):
+    return _encode_btype(rs1, rs2, imm, 0b101)
+
+
+def encode_bltu(rs1, rs2, imm):
+    return _encode_btype(rs1, rs2, imm, 0b110)
+
+
+def encode_bgeu(rs1, rs2, imm):
+    return _encode_btype(rs1, rs2, imm, 0b111)

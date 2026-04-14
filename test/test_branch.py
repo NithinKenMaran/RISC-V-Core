@@ -15,85 +15,60 @@ def imem_read(imem, byte_addr):
     return imem[word_addr]
 
 @cocotb.test()
-async def test_pc(core):
-    imem = { 
-        0: encode_addi(1, 0, 10),   # x1 = 10
-        1: encode_addi(2, 0, 7),    # x2 = 7
-        2: encode_add(3, 1, 2),     # x3 = 17
-        3: encode_addi(4, 0, 17),    # x4 = 17
-        4: encode_beq(3, 4, 8),     # if x3 == x4, pc += 8
-        5: encode_addi(5, 0, 99),   # x5 = 99 (hopefully will skip)
-        6: encode_addi(5, 0, 88),   # x5 = 88
-    }
+async def test_beq(core):
+    await run_branch_test(
+        core,
+        branch_instr=encode_beq(3, 4, 8),   # 17 == 17 -> taken
+        x3_expected=17,
+        x4_expected=17,
+    )
 
-    await init_core(core) # holds reset for 2 clock edges, then turns off reset, waits 1 ns, and returns
 
-    ###### x1 = 10 ######
-    pc = int(core.pc.value)
-    instr = imem_read(imem, pc)
-    core.instr.value = instr
-    core.instr_valid.value = 1
+@cocotb.test()
+async def test_bne(core):
+    await run_branch_test(
+        core,
+        branch_instr=encode_bne(3, 4, 8),   # 17 != 16 -> taken
+        x3_expected=17,
+        x4_expected=16,
+    )
 
-    await RisingEdge(core.clk)
-    await Timer(1, units="ns")
 
-    got = int(core.register_file.registers[1].value)
-    assert got == 10, f"x1 wrong: got {got}, expected 10"
+@cocotb.test()
+async def test_blt(core):
+    await run_branch_test(
+        core,
+        branch_instr=encode_blt(3, 4, 8),   # 17 < 20 -> taken
+        x3_expected=17,
+        x4_expected=20,
+    )
 
-    ##### x2 = 7 ######
-    pc = int(core.pc.value)
-    instr = imem_read(imem, pc)
-    core.instr.value = instr
 
-    await RisingEdge(core.clk)
-    await Timer(1, units="ns")
+@cocotb.test()
+async def test_bge(core):
+    await run_branch_test(
+        core,
+        branch_instr=encode_bge(3, 4, 8),   # 17 >= 16 -> taken
+        x3_expected=17,
+        x4_expected=16,
+    )
 
-    got = int(core.register_file.registers[2].value)
-    assert got == 7, f"x2 wrong: got {got}, expected 7, \n \
-        pc={pc}, instr=0x{instr:08x}"
 
-    ###### x3 = 17 ######
-    pc = int(core.pc.value)
-    instr = imem_read(imem, pc)
-    core.instr.value = instr
+@cocotb.test()
+async def test_bltu(core):
+    await run_branch_test(
+        core,
+        branch_instr=encode_bltu(3, 4, 8),  # 17 < 20 unsigned -> taken
+        x3_expected=17,
+        x4_expected=20,
+    )
 
-    await RisingEdge(core.clk)
-    await Timer(1, units="ns")
 
-    got = int(core.register_file.registers[3].value)
-    assert got == 17, f"x3 wrong: got {got}, expected 17, \n \
-        pc={pc}, instr=0x{instr:08x}"
-    
-    ##### x4 = 17 ######
-    pc = int(core.pc.value)
-    instr = imem_read(imem, pc)
-    core.instr.value = instr
-
-    await RisingEdge(core.clk)
-    await Timer(1, units="ns")
-
-    got = int(core.register_file.registers[4].value)
-    assert got == 17, f"x4 wrong: got {got}, expected 17, \n \
-        pc={pc}, instr=0x{instr:08x}"
-
-    ##### beq ######
-    pc = int(core.pc.value)
-    instr = imem_read(imem, pc)
-    core.instr.value = instr
-
-    await RisingEdge(core.clk)
-    await Timer(1, units="ns")
-
-    ##### x5 = 88 (skipped x5 = 99) ######
-    pc = int(core.pc.value)
-    instr = imem_read(imem, pc)
-    core.instr.value = instr
-
-    await RisingEdge(core.clk)
-    await Timer(1, units="ns")
-
-    got = int(core.register_file.registers[5].value)
-    assert got == 88, f"x5 wrong: got {got}, expected 88, \n \
-        pc={pc}, instr=0x{instr:08x}"
-
-    print(f"Final PC: {pc}, x5 value: {got}")
+@cocotb.test()
+async def test_bgeu(core):
+    await run_branch_test(
+        core,
+        branch_instr=encode_bgeu(3, 4, 8),  # 17 >= 16 unsigned -> taken
+        x3_expected=17,
+        x4_expected=16,
+    )

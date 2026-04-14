@@ -6,7 +6,9 @@ module alu(
     input [31:0] a,
     input [31:0] b,
     output reg [31:0] result,
-    output zero
+    output zero,
+    output lt, 
+    output ltu
 );
     always @(*) begin
         case (alu_op)
@@ -25,5 +27,7 @@ module alu(
     end
 
     assign zero = (result == 32'b0);
+    assign lt = ($signed(a) < $signed(b));
+    assign ltu = (a < b);
 
 endmodule; // alu

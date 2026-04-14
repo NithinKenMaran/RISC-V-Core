@@ -125,3 +125,67 @@ async def run_branch_test(core, branch_instr, x3_expected, x4_expected):
         f"x5 wrong: got {got_x5}, expected 88\n"
         f"pc after branch={pc}, instr=0x{instr:08x}"
     )
+
+async def run_jalr_test(core, base, imm, expected_target, expected_rd, rd=5, rs1=1):
+    """
+    Program layout:
+      0: addi x1, x0, base
+      1: jalr x5, x1, imm
+      2: addi x2, x0, 99   -> skipp
+      3: addi x2, x0, 88   -> execute
+
+    """
+
+    imem = {
+        0: encode_addi(rs1, 0, base),      # x1 = base
+        1: encode_jalr(rd, rs1, imm),      # rd = old pc + 4, pc = (x1 + imm) & ~1
+        2: encode_addi(2, 0, 99),          # skipskip
+        3: encode_addi(2, 0, 88),          # should execute
+    }
+
+    await init_core(core)
+    core.instr_valid.value = 1
+
+    # -------- instr 0 --------
+    pc = int(core.pc.value)
+    instr = imem_read(imem, pc)
+    core.instr.value = instr
+
+    await RisingEdge(core.clk)
+    await Timer(1, units="ns")
+
+    got = int(core.register_file.registers[rs1].value)
+    assert got == u32(base), f"x{rs1} wrong: got {got}, expected {u32(base)}"
+    print(f"x{rs1} = {got}")
+
+    # -------- instr 1: jalr --------
+    pc = int(core.pc.value)
+    assert pc == 4, f"Before jalr, expected pc=4, got {pc}"
+    print(f"PC before jalr: {pc}")
+
+    instr = imem_read(imem, pc)
+    core.instr.value = instr
+
+    await RisingEdge(core.clk)
+    await Timer(1, units="ns")
+
+    got_rd = int(core.register_file.registers[rd].value)
+    assert got_rd == u32(expected_rd), (
+        f"x{rd} wrong after jalr: got {got_rd}, expected {u32(expected_rd)}"
+    )
+    print(f"x{rd} after jalr: {got_rd}")
+
+    pc = int(core.pc.value)
+    assert pc == expected_target, f"After jalr, expected pc={expected_target}, got {pc}"
+    print(f"PC after jalr: {pc}")
+
+    # -------- target instr --------
+    instr = imem_read(imem, pc)
+    core.instr.value = instr
+
+    await RisingEdge(core.clk)
+    await Timer(1, units="ns")
+
+    got = int(core.register_file.registers[2].value)
+    assert got == 88, f"x2 wrong: got {got}, expected 88"
+    print(f"x2 = {got}")

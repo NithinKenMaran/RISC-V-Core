@@ -17,20 +17,26 @@ module core(
 
 
     // program counter logic
-    wire [31:0] pc_next;
+    reg [31:0] pc_next;
     always @(posedge clk) begin
         if (reset) begin
             pc <= 32'b0;
         end else if (instr_valid) begin
             pc <= pc_next;
-        end else begin
-            pc <= pc; // hold the value
-        end
+        end 
     end
 
-    assign pc_next = pc_src ? pc + imm_ext : pc + 4;
+    wire [31:0] pc_plus_4;
+    assign pc_plus_4 = pc + 4;
 
-    
+    always @(*) begin
+        case (pc_src)
+            2'b00: pc_next = pc_plus_4;
+            2'b01: pc_next = pc + imm_ext;
+            2'b10: pc_next = alu_result & 32'hFFFFFFFE; // for jalr, last bit has to be set to zero.
+            default: pc_next = pc_plus_4;
+        endcase
+    end
 
     // decoder
     wire [6:0] op;
@@ -54,7 +60,7 @@ module core(
     );
 
     // control unit
-    wire pc_src;
+    wire [1:0] pc_src;
     wire [1:0] result_src;
     wire memwrite;
     wire [3:0] alu_op;
@@ -80,7 +86,7 @@ module core(
     );
 
     // register file
-    wire [31:0] reg_w_data;
+    reg [31:0] reg_w_data;
 
     `ifdef DEBUG
         wire [31:0] x1_db, x2_db, x3_db;
@@ -107,7 +113,14 @@ module core(
         `endif
     );
 
-    assign reg_w_data = alu_result;
+    always @(*) begin
+        case (result_src)
+            2'b00: reg_w_data = alu_result; // ALU result
+            2'b10: reg_w_data = pc + 4; // for jal & jalr
+            2'b01: reg_w_data = 32'b0; // for load (not implemented yet)
+            default: reg_w_data = 32'b0;
+        endcase
+    end
 
     // extender
     wire [31:0] imm_ext;

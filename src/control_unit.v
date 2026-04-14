@@ -8,7 +8,7 @@ module control_unit(
     input lt, 
     input ltu,
     
-    output reg pc_src,
+    output reg [1:0] pc_src,
     output [1:0] result_src,
     output memwrite,
     output reg [3:0] alu_op,    
@@ -18,11 +18,13 @@ module control_unit(
 );
 
     // instruction type signals
-    wire is_rtype, is_itype, branch;              
+    wire is_rtype, is_itype, branch, is_jal, is_jalr;
 
     assign is_rtype = (op == 7'b0110011);
     assign is_itype = (op == 7'b0010011);
     assign branch = (op == 7'b1100011);
+    assign is_jal = (op == 7'b1101111);
+    assign is_jalr = (op == 7'b1100111) && (funct3 == 3'b000);
 
     // branch specific 
     wire is_beq = branch && (funct3 == 3'b000); 
@@ -35,33 +37,41 @@ module control_unit(
     // CONTROL SIGNALS //
 
     // pc source
+    wire branch_taken;
+
+    assign branch_taken =
+        (is_beq  &&  zero) ||
+        (is_bne  && !zero) ||
+        (is_blt  &&  lt)   ||
+        (is_bge  && !lt)   ||
+        (is_bltu &&  ltu)  ||
+        (is_bgeu && !ltu);
+
     always @(*) begin
-        if (is_beq) begin
-            pc_src = zero; // branch if equal
-        end else if (is_bne) begin
-            pc_src = !zero; // branch if not equal
-        end else if (is_blt) begin
-            pc_src = lt; // branch if less than (signed)
-        end else if (is_bge) begin
-            pc_src = !lt; // branch if greater than or equal (signed)
-        end else if (is_bltu) begin
-            pc_src = ltu; // branch if less than (unsigned)
-        end else if (is_bgeu) begin
-            pc_src = !ltu; // branch if greater than or equal (unsigned)
+        if (is_jalr) begin
+            pc_src = 2'b10;   // rs1 + imm
+        end else if (is_jal || branch_taken) begin
+            pc_src = 2'b01;   // pc + imm
         end else begin
-            pc_src = 1'b0; // next instruction
+            pc_src = 2'b00;   // pc + 4
         end
     end
 
-    assign result_src = 2'b00;
+    // result source: 00 = ALU, 01 = memory, 10 = PC + 4
+    assign result_src = (is_jal || is_jalr) ? 2'b10 : 2'b00;
+
     assign memwrite  = 1'b0;
-    assign imm_src   = branch ? 2'b10 : 2'b00;
+    assign imm_src =
+        is_jal  ? 2'b11 : // J type
+        branch  ? 2'b10 : // B type
+                2'b00; // I type 
+                //(NOTE: jalr is I type)
 
     // register write enable
-    assign reg_write = is_rtype || is_itype;
+    assign reg_write = is_rtype || is_itype || is_jal || is_jalr;
 
     // ALU source: 1 if immediate, 0 if register type
-    assign alu_src = is_itype;
+    assign alu_src = is_itype || is_jalr;
 
     always @(*) begin
         alu_op = 5'b00000;  // default
@@ -96,6 +106,10 @@ module control_unit(
 
         else if (branch) begin
             alu_op = `ALU_SUB; // for beq
+        end
+
+        else if (is_jalr) begin
+            alu_op = `ALU_ADD; // for jalr, calculate target address
         end
     end
 

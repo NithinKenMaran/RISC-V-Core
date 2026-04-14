@@ -172,3 +172,61 @@ def encode_bltu(rs1, rs2, imm):
 
 def encode_bgeu(rs1, rs2, imm):
     return _encode_btype(rs1, rs2, imm, 0b111)
+
+# J-Type Encoders
+
+# J-TYPE ENCODERS
+
+def encode_jal(rd: int, imm: int) -> int:
+    """
+    Encode: jal rd, imm
+
+    imm:
+      - jump offset in bytes
+      - must be 2-byte aligned
+      - stored as J-type 21-bit signed immediate
+    """
+    opcode = 0b1101111
+
+    if imm % 2 != 0:
+        raise ValueError("JAL immediate must be 2-byte aligned")
+
+    imm &= 0x1FFFFF  # 21-bit signed immediate
+
+    imm20    = (imm >> 20) & 0x1
+    imm10_1  = (imm >> 1)  & 0x3FF
+    imm11    = (imm >> 11) & 0x1
+    imm19_12 = (imm >> 12) & 0xFF
+
+    instr = 0
+    instr |= (imm20    << 31)
+    instr |= (imm10_1  << 21)
+    instr |= (imm11    << 20)
+    instr |= (imm19_12 << 12)
+    instr |= (rd       << 7)
+    instr |= opcode
+
+    return instr
+
+
+# JALR ENCODER (jalr is I type btw)
+
+def encode_jalr(rd: int, rs1: int, imm: int) -> int:
+    """
+    Encode: jalr rd, rs1, imm
+
+    imm:
+      - 12-bit signed immediate
+      - I-type encoding
+    """
+    imm12 = imm & 0xFFF
+    opcode = 0b1100111
+    funct3 = 0b000
+
+    return (
+        (imm12 << 20)
+        | (rs1 << 15)
+        | (funct3 << 12)
+        | (rd << 7)
+        | opcode
+    )

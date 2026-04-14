@@ -112,3 +112,39 @@ def encode_srai(rd: int, rs1: int, shamt: int) -> int:
         | 0b0010011
     )
 
+
+# B-TYPE ENCODERS
+def encode_beq(rs1, rs2, imm):
+    """
+    Encode: beq rs1, rs2, imm
+
+    imm:
+      - branch offset in bytes
+      - must be 2-byte aligned
+      - typically use multiples of 4 in your current setup
+    """
+    opcode = 0b1100011
+    funct3 = 0b000
+
+    if imm % 2 != 0:
+        raise ValueError("BEQ immediate must be 2-byte aligned")
+
+    # 13-bit signed immediate for B-type
+    imm &= 0x1FFF
+
+    imm12   = (imm >> 12) & 0x1
+    imm10_5 = (imm >> 5)  & 0x3F
+    imm4_1  = (imm >> 1)  & 0xF
+    imm11   = (imm >> 11) & 0x1
+
+    instr = 0
+    instr |= (imm12   << 31)
+    instr |= (imm10_5 << 25)
+    instr |= (rs2     << 20)
+    instr |= (rs1     << 15)
+    instr |= (funct3  << 12)
+    instr |= (imm4_1  << 8)
+    instr |= (imm11   << 7)
+    instr |= opcode
+
+    return instr

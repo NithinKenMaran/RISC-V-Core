@@ -16,27 +16,26 @@ module control_unit(
 );
 
     // instruction type signals
-    wire is_rtype;              
-    wire is_itype;              
+    wire is_rtype, is_itype, branch;              
 
     assign is_rtype = (op == 7'b0110011);
     assign is_itype = (op == 7'b0010011);
+    assign branch = (op == 7'b1100011);
+    // TODO: beq
 
-    // unused for now, when doing r type and i type
-    assign pc_src    = 1'b0;
+
+    // CONTROL SIGNALS //
+    assign pc_src    = branch && zero; // for beq, if zero is true, we take the branch
     assign result_src = 2'b00;
     assign memwrite  = 1'b0;
-    assign imm_src   = 2'b00;
+    assign imm_src   = branch ? 2'b10 : 2'b00;
 
     // register write enable
     assign reg_write = is_rtype || is_itype;
 
-    // ALU source:
-    // R-type -> register
-    // I-type -> immediate
+    // ALU source: 1 if immediate, 0 if register type
     assign alu_src = is_itype;
 
-    // alu op decode
     always @(*) begin
         alu_op = 5'b00000;  // default
 
@@ -66,6 +65,10 @@ module control_unit(
                 3'b111: alu_op = `ALU_AND;                  // andi
                 default: alu_op = 5'b00000;
             endcase
+        end
+
+        else if (branch) begin
+            alu_op = `ALU_SUB; // for beq
         end
     end
 

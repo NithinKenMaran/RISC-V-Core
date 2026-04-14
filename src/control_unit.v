@@ -9,7 +9,7 @@ module control_unit(
     output pc_src,
     output [1:0] result_src,
     output memwrite,
-    output reg [4:0] alu_op,    
+    output reg [3:0] alu_op,    
     output alu_src,
     output [1:0] imm_src,
     output reg_write

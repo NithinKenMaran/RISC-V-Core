@@ -1,4 +1,5 @@
 `include "params.vh"
+// `define DEBUG
 
 module core(
     input clk,
@@ -9,8 +10,27 @@ module core(
     // instr_valid is unused for now
     // right now, test_core.py appropriately asserts instruction
     // then waits for 1 ns and reads outputs.
-    input instr_valid
-);
+    input instr_valid,
+
+    output reg [31:0] pc
+    );
+
+
+    // program counter logic
+    wire [31:0] pc_next;
+    always @(posedge clk) begin
+        if (reset) begin
+            pc <= 32'b0;
+        end else if (instr_valid) begin
+            pc <= pc_next;
+        end else begin
+            pc <= pc; // hold the value
+        end
+    end
+
+    assign pc_next = pc_src ? pc + imm_ext : pc + 4;
+
+    
 
     // decoder
     wire [6:0] op;
@@ -37,7 +57,7 @@ module core(
     wire pc_src;
     wire [1:0] result_src;
     wire memwrite;
-    wire [4:0] alu_op;
+    wire [3:0] alu_op;
     wire alu_src;
     wire [1:0] imm_src;
     wire reg_write;

@@ -30,4 +30,4 @@ module alu(
     assign lt = ($signed(a) < $signed(b));
     assign ltu = (a < b);
 
-endmodule; // alu
+endmodule // alu

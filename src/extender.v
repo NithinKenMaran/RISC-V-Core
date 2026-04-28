@@ -1,6 +1,6 @@
 module extender(
     input [24:0] imm,
-    input [1:0] imm_src,
+    input [2:0] imm_src,
     output reg [31:0] imm_ext
 );
 

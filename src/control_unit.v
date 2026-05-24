@@ -33,7 +33,13 @@ module control_unit(
     output wire       is_branch,
     output wire       is_jal,
     output wire       is_jalr,
-    output wire       is_trap_instr
+    output wire       is_trap_instr,
+
+    // sub-word store and misc signals for FSM
+    output wire       is_sb,
+    output wire       is_sh,
+    output wire       is_fence,
+    output wire       is_illegal
 );
 
     // ----------------------------
@@ -56,12 +62,33 @@ module control_unit(
     assign is_jalr   = (op == 7'b1100111) && (funct3 == 3'b000);
     assign is_lui    = (op == 7'b0110111);
     assign is_auipc  = (op == 7'b0010111);
+    assign is_fence  = (op == 7'b0001111);
 
-    wire is_lw;
-    wire is_sw;
+    // valid funct3 subsets
+    wire is_valid_load_funct3 =
+        (funct3 == 3'b000) || (funct3 == 3'b001) || (funct3 == 3'b010) ||
+        (funct3 == 3'b100) || (funct3 == 3'b101);
 
-    assign is_lw = is_load  && (funct3 == 3'b010);
-    assign is_sw = is_store && (funct3 == 3'b010);
+    wire is_valid_store_funct3 =
+        (funct3 == 3'b000) || (funct3 == 3'b001) || (funct3 == 3'b010);
+
+    // individual load/store variants (used for control signals)
+    wire is_lw  = is_load  && (funct3 == 3'b010);
+    wire is_sw  = is_store && (funct3 == 3'b010);
+
+    assign is_sb = is_store && (funct3 == 3'b000);
+    assign is_sh = is_store && (funct3 == 3'b001);
+
+    // illegal instruction: unknown opcode or unsupported funct3
+    wire is_known_op =
+        is_rtype || is_itype || is_load || is_store || is_branch ||
+        is_jal   || is_jalr  || is_lui  || is_auipc ||
+        is_trap_instr || is_fence;
+
+    assign is_illegal =
+        !is_known_op ||
+        (is_load  && !is_valid_load_funct3) ||
+        (is_store && !is_valid_store_funct3);
 
     // ----------------------------
     // Which source registers are actually needed?
@@ -130,14 +157,14 @@ module control_unit(
     // Result source
     //
     // 000 = ALU result
-    // 001 = memory read data
+    // 001 = memory read data (all loads)
     // 010 = pc + 4
     // 011 = immediate, for LUI
     // 100 = pc + imm, for AUIPC
     // ----------------------------
 
     always @(*) begin
-        if (is_lw) begin
+        if (is_load && is_valid_load_funct3) begin
             result_src = 3'b001;
         end else if (is_jal || is_jalr) begin
             result_src = 3'b010;
@@ -154,7 +181,10 @@ module control_unit(
     // Memory controls
     // ----------------------------
 
-    assign mem_read  = is_lw;
+    // mem_read: true for all valid loads (LB/LH/LW/LBU/LHU)
+    assign mem_read  = is_load && is_valid_load_funct3;
+    // mem_write: only true for SW (direct full-word write)
+    // SB/SH use read-modify-write handled by the FSM
     assign mem_write = is_sw;
 
     // ----------------------------
@@ -188,7 +218,7 @@ module control_unit(
     assign reg_write =
         is_rtype ||
         is_itype ||
-        is_lw    ||
+        (is_load && is_valid_load_funct3) ||
         is_jal   ||
         is_jalr  ||
         is_lui   ||

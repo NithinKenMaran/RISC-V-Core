@@ -93,12 +93,27 @@ def encode_auipc(rd, imm20):
 
 # ── Loads / stores ────────────────────────────────────────────────────────────
 
-def encode_lw(rd, rs1, imm):
-    return encode_itype(imm, rs1, 0x2, rd, 0b0000011)
+def encode_lb(rd, rs1, imm):   return encode_itype(imm, rs1, 0x0, rd, 0b0000011)
+def encode_lh(rd, rs1, imm):   return encode_itype(imm, rs1, 0x1, rd, 0b0000011)
+def encode_lw(rd, rs1, imm):   return encode_itype(imm, rs1, 0x2, rd, 0b0000011)
+def encode_lbu(rd, rs1, imm):  return encode_itype(imm, rs1, 0x4, rd, 0b0000011)
+def encode_lhu(rd, rs1, imm):  return encode_itype(imm, rs1, 0x5, rd, 0b0000011)
+
+def encode_sb(rs1, rs2, imm):
+    # mem[rs1 + imm][7:0] = rs2[7:0]
+    return encode_stype(imm, rs2, rs1, 0x0, 0b0100011)
+
+def encode_sh(rs1, rs2, imm):
+    # mem[rs1 + imm][15:0] = rs2[15:0]
+    return encode_stype(imm, rs2, rs1, 0x1, 0b0100011)
 
 def encode_sw(rs1, rs2, imm):
     # mem[rs1 + imm] = rs2
     return encode_stype(imm, rs2, rs1, 0x2, 0b0100011)
+
+def encode_fence():
+    # FENCE with pred=IORW, succ=IORW; treated as NOP by this core.
+    return 0x0FF0000F
 
 
 # ── Branches ─────────────────────────────────────────────────────────────────

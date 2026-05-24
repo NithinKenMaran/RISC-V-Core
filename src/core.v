@@ -11,6 +11,10 @@ module core(
     inout  wire [3:0] qspi_dq
 );
 
+    // Fixed hardware trap vector (terminal, no mret).
+    // Reserves 0xF000..0xFFFF for trap/debug code in the 64 KiB flash.
+    localparam [31:0] TRAP_VECTOR = 32'h0000_F000;
+
     // Abstract targets understood by qspi_ctrl.
     localparam TARGET_FLASH = 2'b00;  // instruction memory
     localparam TARGET_REGS  = 2'b01;  // external register file in PSRAM
@@ -40,6 +44,13 @@ module core(
     reg [31:0] rs2_data;
     reg [31:0] alu_result_reg;
     reg [31:0] mem_rdata_reg;
+
+    // Trap state registers (no CSRs; terminal trap only).
+    // Accessible via cocotb as dut.dut.trap_valid etc.
+    reg        trap_valid;
+    reg [31:0] trap_epc;
+    reg [31:0] trap_cause;
+    reg [31:0] trap_tval;
 
     // QSPI request/response interface.
     reg         qspi_req_valid;
@@ -78,6 +89,8 @@ module core(
     wire [4:0]  rs2;
     wire [4:0]  rd;
     wire [24:0] imm;
+    wire        dec_is_ecall;
+    wire        dec_is_ebreak;
 
     decoder decoder_inst (
         .instr(instr_reg),
@@ -87,7 +100,9 @@ module core(
         .rs1(rs1),
         .rs2(rs2),
         .rd(rd),
-        .imm(imm)
+        .imm(imm),
+        .is_ecall(dec_is_ecall),
+        .is_ebreak(dec_is_ebreak)
     );
 
     // Branch/compare values.
@@ -112,6 +127,7 @@ module core(
     wire is_branch;
     wire is_jal;
     wire is_jalr;
+    wire is_trap_instr;
 
     control_unit control_unit_inst (
         .op(op),
@@ -121,6 +137,9 @@ module core(
         .zero(cmp_zero),
         .lt(cmp_lt),
         .ltu(cmp_ltu),
+
+        .is_ecall(dec_is_ecall),
+        .is_ebreak(dec_is_ebreak),
 
         .pc_src(pc_src),
         .result_src(result_src),
@@ -140,7 +159,8 @@ module core(
         .is_store(is_store),
         .is_branch(is_branch),
         .is_jal(is_jal),
-        .is_jalr(is_jalr)
+        .is_jalr(is_jalr),
+        .is_trap_instr(is_trap_instr)
     );
 
     // Immediate extender.
@@ -213,6 +233,11 @@ module core(
             alu_result_reg <= 32'b0;
             mem_rdata_reg  <= 32'b0;
 
+            trap_valid <= 1'b0;
+            trap_epc   <= 32'b0;
+            trap_cause <= 32'b0;
+            trap_tval  <= 32'b0;
+
             qspi_req_valid  <= 1'b0;
             qspi_req_target <= TARGET_FLASH;
             qspi_req_write  <= 1'b0;
@@ -245,8 +270,16 @@ module core(
 
                 S_DECODE: begin
                     // Decode is combinational from instr_reg.
-                    // One decode state keeps timing simple.
-                    state <= S_RS1_REQ;
+                    if (is_trap_instr) begin
+                        // Latch trap state; skip RS reads, execute, mem, WB.
+                        trap_valid <= 1'b1;
+                        trap_epc   <= pc;
+                        trap_cause <= dec_is_ecall ? 32'd11 : 32'd3;
+                        trap_tval  <= instr_reg;
+                        state      <= S_PC_UPDATE;
+                    end else begin
+                        state <= S_RS1_REQ;
+                    end
                 end
 
                 S_RS1_REQ: begin
@@ -367,7 +400,7 @@ module core(
                 end
 
                 S_PC_UPDATE: begin
-                    pc <= pc_next;
+                    pc <= is_trap_instr ? TRAP_VECTOR : pc_next;
                     qspi_req_valid <= 1'b0;
                     state <= S_FETCH_REQ;
                 end

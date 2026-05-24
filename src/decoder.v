@@ -10,8 +10,11 @@ module decoder(
     output [4:0] rs1,
     output [4:0] rs2,
     output [4:0] rd,
-    
-    output [24:0] imm
+
+    output [24:0] imm,
+
+    output is_ecall,
+    output is_ebreak
 );
     assign op = instr[6:0];
     assign funct3 = instr[14:12];
@@ -22,5 +25,8 @@ module decoder(
     assign rd  = instr[11:7];
 
     assign imm = instr[31:7];
+
+    assign is_ecall  = (instr == 32'h00000073);
+    assign is_ebreak = (instr == 32'h00100073);
 
 endmodule // decoder

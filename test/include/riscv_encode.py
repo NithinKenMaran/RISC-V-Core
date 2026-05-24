@@ -134,3 +134,9 @@ def encode_jalr(rd, rs1, imm):
 
 def encode_nop():
     return 0x00000013  # addi x0, x0, 0
+
+def encode_ecall():
+    return 0x00000073  # ECALL -> trap_cause = 11
+
+def encode_ebreak():
+    return 0x00100073  # EBREAK -> trap_cause = 3

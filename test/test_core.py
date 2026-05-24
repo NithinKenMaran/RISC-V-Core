@@ -5,8 +5,10 @@
 # NOT IMPLEMENTED (remaining RV32I work):
 #   Sub-word loads : LB, LH, LBU, LHU
 #   Sub-word stores: SB, SH
-#   System         : FENCE, ECALL, EBREAK
+#   System         : FENCE
 #   CSR            : CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
+#   Trap features  : mtvec, mepc, mcause, mtval as CSRs; mret; interrupts;
+#                    nested traps; non-terminal trap return
 
 import sys
 from pathlib import Path
@@ -29,6 +31,7 @@ from riscv_encode import (
     encode_lw, encode_sw,
     encode_beq, encode_bne, encode_blt, encode_bge, encode_bltu, encode_bgeu,
     encode_jal, encode_jalr,
+    encode_ecall, encode_ebreak,
 )
 
 # ── Shared test runner ────────────────────────────────────────────────────────
@@ -374,3 +377,76 @@ async def test_jalr(dut):
     await run_test(dut, flash, rama, ramb, cycles=2400)
     assert read_reg(dut, 5) == 8,    f"JALR: expected x5=8 (link), got {read_reg(dut, 5)}"
     assert read_reg(dut, 3) == 0x42, f"JALR: expected x3=0x42 (target), got 0x{read_reg(dut, 3):02x}"
+
+
+# ── Trap: ECALL / EBREAK ──────────────────────────────────────────────────────
+#
+# Flash layout for trap tests:
+#   0x0000 : trap instruction (ECALL or EBREAK)
+#   0x0004 : addi x3, x0, 0xFF   <- must NOT execute
+#   0xF000 : addi x5, x0, 0x42   <- trap handler sentinel
+#   0xF004 : jal x0, 0            <- loop forever at 0xF004
+#
+# Internal trap registers are accessed via cocotb hierarchical path:
+#   dut.dut.trap_valid / dut.dut.trap_epc / dut.dut.trap_cause / dut.dut.trap_tval
+# (dut = top_qspi_tb; dut.dut = the core instance named 'dut' inside it)
+
+TRAP_VECTOR = 0x0000_F000
+TRAP_SENTINEL = 0x42
+
+
+def trap_images(trap_instr):
+    """
+    Flash image for a terminal trap test.
+    Builds program + trap handler; no register pre-loading needed.
+    """
+    flash, rama, ramb = MemoryImage(), MemoryImage(), MemoryImage()
+    flash.set_word_qspi(0x0000, trap_instr)
+    flash.set_word_qspi(0x0004, encode_addi(3, 0, 0xFF))    # must be skipped
+    flash.set_word_qspi(TRAP_VECTOR + 0, encode_addi(5, 0, TRAP_SENTINEL))
+    flash.set_word_qspi(TRAP_VECTOR + 4, encode_jal(0, 0))  # jal x0, 0 (0x0000006F)
+    return flash, rama, ramb
+
+
+@cocotb.test()
+async def test_ecall(dut):
+    """
+    ECALL at PC=0 must redirect to TRAP_VECTOR, write sentinel to x5,
+    not execute the instruction at 0x0004, and latch trap metadata.
+    """
+    f, ra, rb = trap_images(encode_ecall())
+    await run_test(dut, f, ra, rb, cycles=3200)
+
+    assert read_reg(dut, 5) == TRAP_SENTINEL, \
+        f"ECALL: trap handler not reached; x5={read_reg(dut, 5):#x}, expected {TRAP_SENTINEL:#x}"
+    assert read_reg(dut, 3) == 0, \
+        f"ECALL: instruction after trap must not execute; x3={read_reg(dut, 3):#x}"
+
+    assert dut.dut.trap_valid.value == 1, \
+        "ECALL: trap_valid should be 1"
+    assert int(dut.dut.trap_epc.value) == 0, \
+        f"ECALL: trap_epc should be 0, got {int(dut.dut.trap_epc.value):#x}"
+    assert int(dut.dut.trap_cause.value) == 11, \
+        f"ECALL: trap_cause should be 11, got {int(dut.dut.trap_cause.value)}"
+
+
+@cocotb.test()
+async def test_ebreak(dut):
+    """
+    EBREAK at PC=0 must redirect to TRAP_VECTOR, write sentinel to x5,
+    not execute the instruction at 0x0004, and latch trap metadata.
+    """
+    f, ra, rb = trap_images(encode_ebreak())
+    await run_test(dut, f, ra, rb, cycles=3200)
+
+    assert read_reg(dut, 5) == TRAP_SENTINEL, \
+        f"EBREAK: trap handler not reached; x5={read_reg(dut, 5):#x}, expected {TRAP_SENTINEL:#x}"
+    assert read_reg(dut, 3) == 0, \
+        f"EBREAK: instruction after trap must not execute; x3={read_reg(dut, 3):#x}"
+
+    assert dut.dut.trap_valid.value == 1, \
+        "EBREAK: trap_valid should be 1"
+    assert int(dut.dut.trap_epc.value) == 0, \
+        f"EBREAK: trap_epc should be 0, got {int(dut.dut.trap_epc.value):#x}"
+    assert int(dut.dut.trap_cause.value) == 3, \
+        f"EBREAK: trap_cause should be 3, got {int(dut.dut.trap_cause.value)}"

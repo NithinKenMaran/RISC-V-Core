@@ -9,6 +9,10 @@ module control_unit(
     input  wire       lt,
     input  wire       ltu,
 
+    // Trap decode from decoder (full-word comparisons)
+    input  wire       is_ecall,
+    input  wire       is_ebreak,
+
     output reg  [1:0] pc_src,
     output reg  [2:0] result_src,
 
@@ -28,7 +32,8 @@ module control_unit(
     output wire       is_store,
     output wire       is_branch,
     output wire       is_jal,
-    output wire       is_jalr
+    output wire       is_jalr,
+    output wire       is_trap_instr
 );
 
     // ----------------------------
@@ -39,6 +44,8 @@ module control_unit(
     wire is_itype;
     wire is_lui;
     wire is_auipc;
+
+    assign is_trap_instr = is_ecall | is_ebreak;
 
     assign is_rtype  = (op == 7'b0110011);
     assign is_itype  = (op == 7'b0010011);

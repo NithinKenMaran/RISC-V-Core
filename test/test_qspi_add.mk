@@ -1,7 +1,7 @@
 SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
 TOPLEVEL = top_qspi_tb
-MODULE = test_core
+MODULE = test_qspi_add
 
 .DEFAULT_GOAL := sim
 
@@ -13,16 +13,22 @@ FLASH_HEX := $(MEM_DIR)/flash.hex
 RAMA_HEX  := $(MEM_DIR)/rama.hex
 RAMB_HEX  := $(MEM_DIR)/ramb.hex
 
-# Create zeroed placeholder hex files so qspi_pmod's initial $readmemh
-# doesn't fail on startup. Each test overwrites these via load_images_into_pmod.
 prepare_mem:
 	mkdir -p $(MEM_DIR)
 	cd $(PWD) && python3 -c "\
 import sys; sys.path.insert(0,'include'); \
-from mem_image import MemoryImage; \
-MemoryImage().write_hex('$(FLASH_HEX)'); \
-MemoryImage().write_hex('$(RAMA_HEX)'); \
-MemoryImage().write_hex('$(RAMB_HEX)') \
+from mem_image import MemoryImage, reg_addr; \
+from riscv_encode import encode_add, encode_nop; \
+flash=MemoryImage(); rama=MemoryImage(); ramb=MemoryImage(); \
+flash.set_word_qspi(0x0000,encode_add(rd=3,rs1=1,rs2=2)); \
+flash.set_word_qspi(0x0004,encode_nop()); \
+flash.set_word_qspi(0x0008,encode_nop()); \
+rama.set_word_qspi(reg_addr(1),10); \
+rama.set_word_qspi(reg_addr(2),20); \
+rama.set_word_qspi(reg_addr(3),0xDEADBEEF); \
+flash.write_hex('$(FLASH_HEX)'); \
+rama.write_hex('$(RAMA_HEX)'); \
+ramb.write_hex('$(RAMB_HEX)') \
 "
 
 VERILOG_SOURCES += $(PWD)/top_qspi_tb.v
@@ -36,6 +42,7 @@ VERILOG_SOURCES += $(SRC)/extender.v
 
 COMPILE_ARGS += -g2012
 COMPILE_ARGS += -I$(INC)
+
 
 sim: prepare_mem
 results.xml: prepare_mem

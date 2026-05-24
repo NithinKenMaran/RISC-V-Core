@@ -372,7 +372,9 @@ module qspi_ctrl #(
 
                         if (nibbles_left == 6'd1) begin
                             phase <= 1'b0;
-                            dq_oe <= 1'b0;
+                            // dq_oe is cleared in ST_NEXT_SEG. Releasing it here
+                            // races with the posedge of qspi_sck: qspi_dq goes Z
+                            // before the PMOD samples, corrupting the last nibble.
                             state <= ST_NEXT_SEG;
                         end else begin
                             nibbles_left <= nibbles_left - 6'd1;
